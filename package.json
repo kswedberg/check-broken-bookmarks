@@ -1,0 +1,23 @@
+{
+  "name": "check-broken-bookmarks",
+  "description": "Check for broken bookmarks",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Karl Swedberg <kswedberg@gmail.com> (https://karlswedberg.com/)",
+  "license": "MIT",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@bamf-health/bamfjs": "^1.10.0",
+    "@supercharge/promise-pool": "^2.1.0",
+    "axios": "^0.24.0",
+    "chalk": "^4.0.0",
+    "fs-extra": "^10.0.0",
+    "inquirer": "^8.2.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.6.0",
+    "eslint-config-kswedberg": "^5.1.1"
+  }
+}

@@ -2,11 +2,6 @@
 # yarn lockfile v1
 
 
-"@bamf-health/bamfjs@^1.10.0":
-  version "1.10.0"
-  resolved "https://npm.pkg.github.com/download/@bamf-health/bamfjs/1.10.0/e926dda4193d9e2d87b22d166d98433cb2c3808036cc8ba297e45c014cbae3d7#1aff6d83a0302c4d651fcf084c323e2d344f4adf"
-  integrity sha512-9pINC0bQeSE/lFnwDirwmoTPXRQUIyh0QBn326nFPzkaqRp2OueRonbh9Vsp20j2Onv1oiJmulRnpxaucraUlw==
-
 "@eslint/eslintrc@^1.0.5":
   version "1.0.5"
   resolved "https://registry.yarnpkg.com/@eslint/eslintrc/-/eslintrc-1.0.5.tgz#33f1b838dbf1f923bfa517e008362b78ddbbf318"

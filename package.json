@@ -9,7 +9,6 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "@bamf-health/bamfjs": "^1.10.0",
     "@supercharge/promise-pool": "^2.1.0",
     "axios": "^0.24.0",
     "chalk": "^4.0.0",

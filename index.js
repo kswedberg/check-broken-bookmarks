@@ -3,12 +3,11 @@ const path = require('path');
 const fs = require('fs');
 const chalk = require('chalk');
 const {promisify} = require('util');
-const {peach} = require('@bamf-health/bamfjs/cjs/promise.js');
 const {PromisePool} = require('@supercharge/promise-pool');
 
 const open = promisify(fs.open);
 const appendFile = promisify(fs.appendFile);
-const {getConfig} = require('./config.js');
+const {getConfig} = require('./config/config.js');
 const {
   getGoodLinks,
   isUrlPermittedWithStatus,

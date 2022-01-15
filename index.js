@@ -1,5 +1,4 @@
 /* eslint-disable no-await-in-loop */
-const path = require('path');
 const fs = require('fs');
 const chalk = require('chalk');
 const {promisify} = require('util');
@@ -7,9 +6,8 @@ const {PromisePool} = require('@supercharge/promise-pool');
 
 const open = promisify(fs.open);
 const appendFile = promisify(fs.appendFile);
-const {getConfig} = require('./config/config.js');
+const {filePaths, getConfig} = require('./config/config.js');
 const {
-  getGoodLinks,
   isUrlPermittedWithStatus,
   isUrlPermitted,
   outputBroken,
@@ -18,25 +16,23 @@ const {
 } = require('./utils.js');
 
 const findBroken = async() => {
-  const config = await getConfig();
-  const {browser} = config;
-
+  const settings = await getConfig();
+  const {goodLinks, browser, ...config} = settings;
   let fails = 0;
   let succeeds = 0;
   const broken = [];
 
-  const src = require(path.join(process.cwd(), config.src));
+  const src = require(config.src);
   const bookmarks = src
   .filter(({url}) => {
     return url && url.startsWith('http');
   })
   .slice(config.start, config.end);
 
-  const goodLinks = await getGoodLinks(config.good);
-  const fd = await open(path.join(process.cwd(), config.good), 'a');
+  const fd = await open(filePaths.good, 'a');
 
   console.log('Using config:', config);
-  console.log(chalk.cyan(`Testing ${bookmarks.length} bookmarks for broken links...`));
+  console.log(chalk.cyan(`\nTesting ${bookmarks.length} bookmarks for broken links...`));
 
   process.on('SIGINT', handleSignal({broken, succeeds, fd, browser}));
   process.on('SIGTERM', handleSignal({broken, succeeds, fd, browser}));
@@ -46,7 +42,7 @@ const findBroken = async() => {
     const {url, title} = item;
     const current = index + 1;
 
-    if (goodLinks.has(url) || isUrlPermitted(url)) {
+    if (goodLinks.has(url) || isUrlPermitted(config.permittedUrls, url)) {
       return;
     }
 
@@ -65,7 +61,7 @@ const findBroken = async() => {
       const {status, statusText} = response;
       const brokenItem = Object.assign({status, statusText}, item);
 
-      if (isUrlPermittedWithStatus(url, status)) {
+      if (isUrlPermittedWithStatus(config.permittedUrls, url, status)) {
         return;
       }
       fails++;
@@ -75,39 +71,15 @@ const findBroken = async() => {
       return brokenItem;
     }
   });
-  // const results = await peach(bookmarks, async(item, index) => {
-  //   const {url, title} = item;
-  //   const current = index + 1;
 
-  //   if (goodLinks.has(url) || /vivaldi|caddyserver|codepen/.test(url)) {
-  //     return;
-  //   }
-
-  //   try {
-  //     // @ts-ignore
-  //     await axios.get(url);
-  //     succeeds++;
-  //     console.log(chalk.green(`SUCCESS (${succeeds} at ${current}):`), title, url);
-
-  //     if (!goodLinks.has(url)) {
-  //       await appendFile(fd, `${url}\n`, 'utf8');
-  //     }
-
-  //   } catch (err) {
-  //     fails++;
-  //     const response = err && err.response || {status: -1};
-  //     const {status, statusText} = response;
-  //     const brokenItem = Object.assign({status, statusText}, item);
-
-  //     broken.push(brokenItem);
-  //     console.log(chalk.red(`FAIL (${fails} at ${current}):`), title, url);
-
-  //     return brokenItem;
-  //   }
-  // });
-
-
-  await outputBroken({broken, succeeds, fd, browser: config.browser});
+  await outputBroken({
+    broken,
+    succeeds,
+    fd,
+    browser,
+    permittedUrls: config.permittedUrls.length,
+    goodLinks: goodLinks.size,
+  });
 };
 
 try {

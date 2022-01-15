@@ -1,0 +1,18 @@
+start: 0
+# end: 100
+browsers:
+  - edge
+  - vivaldi
+  - brave
+  - chrome
+  - firefox
+  - other
+
+permitted_urls:
+  - url: codepen.io
+  - url: vivaldi
+  - url: caddyserver.com
+  - url: figma.com
+    status: 404
+  - url: npmjs.com
+    status: 429

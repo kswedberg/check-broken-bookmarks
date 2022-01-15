@@ -31,21 +31,12 @@ const getTime = () => {
   return `${date}.${time}`;
 };
 
-const getGoodLinks = async(good) => {
-  await fse.ensureFile(good);
-  const goodFile = await fse.readFile(good, 'utf8');
-  const goodLinks = goodFile.split('\n').filter((ln) => ln && !!ln.trim());
-
-  return new Set(goodLinks);
-};
-
 const closeFd = async function(fd) {
   await close(fd);
 };
 
-
-const outputBroken = async({broken, succeeds, browser, fd}) => {
-  console.log(chalk.green('Finished testing URLs'));
+const outputBroken = async({broken, succeeds, browser, fd, permittedUrls, goodLinks}) => {
+  console.log(chalk.green('Finished checking URLs\n'));
 
   try {
     await closeFd(fd);
@@ -57,9 +48,15 @@ const outputBroken = async({broken, succeeds, browser, fd}) => {
     const base = `${browser}.${getTime()}.json`;
     const file = path.join(process.cwd(), 'broken', base);
 
-    console.log(chalk.green(`Found ${succeeds} good links`));
+    if (goodLinks) {
+      console.log(`Omitted up to ${chalk.cyan(goodLinks)} links already found to be good`);
+    }
+    if (permittedUrls) {
+      console.log(`Omitted links based on ${chalk.cyan(permittedUrls)} permissions in the config.yml`);
+    }
+    console.log(chalk.green(`\nFound ${succeeds} ${goodLinks ? 'NEW good' : 'good'} links`));
     console.log(chalk.red(`Found ${broken.length} broken links`));
-    console.log('Writing broken links to file...', file);
+    console.log('\nWriting broken links to file...', file);
 
     await fse.outputJson(file, broken);
   } catch (err) {
@@ -67,10 +64,10 @@ const outputBroken = async({broken, succeeds, browser, fd}) => {
   }
 };
 
-const handleSignal = ({broken, succeeds, fd, browser}) => {
+const handleSignal = (settings) => {
   return async(signal) => {
     console.log(`Received ${signal}!!!`);
-    await outputBroken({broken, succeeds, fd, browser});
+    await outputBroken(settings);
     process.exit(1);
   };
 };
@@ -83,31 +80,19 @@ const axios = ax.create({
   },
 });
 
-
-const permittedUrls = [
-  {url: 'codepen.io'},
-  {url: 'vivaldi'},
-  {url: 'caddyserver.com'},
-  {url: 'figma.com', status: 404},
-  {url: 'npmjs.com', status: 429},
-];
-
-const generalExceptions = permittedUrls.filter(({status}) => !status);
-
-const isUrlPermitted = (url) => {
-  return generalExceptions.some((ex) => url.includes(ex.url));
+const isUrlPermitted = (allPermitted = [], url) => {
+  return allPermitted.some((permitted) => !permitted.status && url.includes(permitted.url));
 };
 
-const isUrlPermittedWithStatus = (url, status) => {
+const isUrlPermittedWithStatus = (allPermitted = [], url, status) => {
   if (!status) {
     return false;
   }
 
-  return permittedUrls.some((ex) => url.includes(ex.url) && (!ex.status || ex.status === status));
+  return allPermitted.some((permitted) => url.includes(permitted.url) && (!permitted.status || permitted.status === status));
 };
 
 module.exports = {
-  getGoodLinks,
   closeFd,
   handleSignal,
   outputBroken,

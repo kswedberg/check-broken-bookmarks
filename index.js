@@ -11,6 +11,8 @@ const appendFile = promisify(fs.appendFile);
 const {getConfig} = require('./config.js');
 const {
   getGoodLinks,
+  isUrlPermittedWithStatus,
+  isUrlPermitted,
   outputBroken,
   handleSignal,
   axios,
@@ -45,7 +47,7 @@ const findBroken = async() => {
     const {url, title} = item;
     const current = index + 1;
 
-    if (goodLinks.has(url) || /vivaldi|caddyserver|codepen/.test(url)) {
+    if (goodLinks.has(url) || isUrlPermitted(url)) {
       return;
     }
 
@@ -60,11 +62,14 @@ const findBroken = async() => {
       }
 
     } catch (err) {
-      fails++;
       const response = err && err.response || {status: -1};
       const {status, statusText} = response;
       const brokenItem = Object.assign({status, statusText}, item);
 
+      if (isUrlPermittedWithStatus(url, status)) {
+        return;
+      }
+      fails++;
       broken.push(brokenItem);
       console.log(chalk.red(`FAIL (${fails} at ${current}):`), title, url);
 

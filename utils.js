@@ -84,10 +84,34 @@ const axios = ax.create({
 });
 
 
+const permittedUrls = [
+  {url: 'codepen.io'},
+  {url: 'vivaldi'},
+  {url: 'caddyserver.com'},
+  {url: 'figma.com', status: 404},
+  {url: 'npmjs.com', status: 429},
+];
+
+const generalExceptions = permittedUrls.filter(({status}) => !status);
+
+const isUrlPermitted = (url) => {
+  return generalExceptions.some((ex) => url.includes(ex.url));
+};
+
+const isUrlPermittedWithStatus = (url, status) => {
+  if (!status) {
+    return false;
+  }
+
+  return permittedUrls.some((ex) => url.includes(ex.url) && (!ex.status || ex.status === status));
+};
+
 module.exports = {
   getGoodLinks,
   closeFd,
   handleSignal,
   outputBroken,
   axios,
+  isUrlPermitted,
+  isUrlPermittedWithStatus,
 };

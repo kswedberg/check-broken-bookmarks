@@ -1,8 +1,8 @@
 # Check Broken Bookmarks
 
-This is a personal repo that I use in conjuction with the [New Tab Bookmarks](https://github.com/kswedberg/new-tab-bookmarks) web extension to clean up my browser bookmarks and remove any that are broken.
+This is a personal repo that I use in conjunction with the [New Tab Bookmarks](https://github.com/kswedberg/new-tab-bookmarks) web extension to clean up my browser bookmarks and remove any that are broken.
 
-Before going through the process of cleaning up your bookmarks, you'll need to load the New Tab Bookmarks extension, clone this repo, and run `yarn install` from this repo's root directory.
+Before going through the process of cleaning up your bookmarks, you'll need to load the New Tab Bookmarks extension, clone this repo, and run `pnpm install` from this repo's root directory.
 
 The process goes like this:
 
@@ -15,7 +15,7 @@ The process goes like this:
 
 ## Create a json file of broken links
 
-1. On the command line from the root directory of this repo, run `npm start` (or `yarn start`) and answer the prompts
+1. On the command line from the root directory of this repo, run `npm start` (or `pnpm start`) and answer the prompts
 2. Wait for the process to finish and note the file output with the line "Writing broken links to file..."
 
 ## Clean up the broken bookmarks

@@ -1,7 +1,7 @@
-const path = require('path');
-const fs = require('fs-extra');
-const inquirer = require('inquirer');
-const yaml = require('js-yaml');
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import inquirer from 'inquirer';
+import yaml from 'js-yaml';
 
 const files = {
   root: '..',
@@ -12,17 +12,27 @@ const files = {
 };
 
 const filePaths = {
-  src: path.resolve(__dirname, files.root, files.src),
-  good: path.join(__dirname, files.root, files.good),
-  config: path.join(__dirname, files.root, files.config),
-  configExample: path.join(__dirname, files.root, files.configExample),
+  src: path.resolve(import.meta.dirname, files.root, files.src),
+  good: path.join(import.meta.dirname, files.root, files.good),
+  config: path.join(import.meta.dirname, files.root, files.config),
+  configExample: path.join(import.meta.dirname, files.root, files.configExample),
 };
 
+const ensureFile = async(file) => {
+  await fs.mkdir(path.dirname(file), {recursive: true});
+  try {
+    await fs.stat(file);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      await fs.writeFile(file, '', 'utf8');
+    }
+  }
+};
 
 const getGoodLinks = async() => {
-  await fs.ensureFile(filePaths.good);
-  const good = await fs.readFile(filePaths.good, 'utf8');
+  await ensureFile(filePaths.good);
 
+  const good = await fs.readFile(filePaths.good, 'utf8');
   const goodLinks = good.split('\n').filter((ln) => ln && !!ln.trim());
 
   return new Set(goodLinks);
@@ -79,7 +89,7 @@ const getInitialConfig = async() => {
   ]);
 
   if (answers.configOptions === 'copy') {
-    await fs.copy(filePaths.configExample, filePaths.config);
+    await fs.cp(filePaths.configExample, filePaths.config);
     answers.configOptions = 'example';
   }
 
@@ -90,6 +100,10 @@ const handleAnswers = async(answers, config, goodLinks) => {
   // Handle Answers
   answers.start = +answers.start || 0;
   answers.end = +answers.end || undefined;
+
+  if (answers.end === -1) {
+    answers.end = undefined;
+  }
 
   if (answers.useGood) {
     answers.goodLinks = goodLinks;
@@ -107,7 +121,7 @@ const handleAnswers = async(answers, config, goodLinks) => {
   }
 
   if (!answers.src.startsWith('/')) {
-    answers.src = path.resolve(__dirname, '..', answers.src);
+    answers.src = path.resolve(import.meta.dirname, '..', answers.src);
   }
 
   return Object.assign(config, answers);
@@ -122,7 +136,7 @@ const getConfig = async() => {
   .map((file) => {
     return {
       name: file,
-      value: path.resolve(__dirname, files.root, dir, file),
+      value: path.resolve(import.meta.dirname, files.root, dir, file),
     };
   });
 
@@ -171,22 +185,24 @@ const getConfig = async() => {
     {
       name: 'start',
       type: 'input',
-      message: 'Start index of bookmarks to test (default is 0)',
+      message: `Start index of bookmarks to test (default is ${config.start ? `${config.start} (from config.yaml)` : '0'})`,
       default: config.start,
     },
     {
       name: 'end',
       type: 'input',
-      message: 'End index of bookmarks to test (default is last bookmark)',
+      default: config.end,
+      message: `End index of bookmarks to test (default is ${config.end ? `${config.end} (from config.yaml)` : 'last bookmark'})`,
     },
   ]);
 
   const results = await handleAnswers(answers, config, goodLinks);
-  const {permitted_urls: permittedUrls, ...rest} = results;
+  const {permitted_urls: permittedUrls, permitted_statuses: permittedStatuses, ...rest} = results;
 
   rest.permittedUrls = permittedUrls || [];
+  rest.permittedStatuses = permittedStatuses || [];
 
   return rest;
 };
 
-module.exports = {filePaths, getConfig};
+export {filePaths, getConfig};

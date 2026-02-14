@@ -1,13 +1,14 @@
-const path = require('path');
-const fse = require('fs-extra');
-const fs = require('fs');
-const chalk = require('chalk');
+import {mkdir, writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import chalk from 'chalk';
+import ax from 'axios';
+import fs from 'node:fs';
+import {promisify} from 'node:util';
 
-const {promisify} = require('util');
+// const {promisify} = require('util');
+// const close = promisify(fs.close);
+
 const close = promisify(fs.close);
-
-const ax = require('axios');
-const {config} = require('process');
 
 const getTime = () => {
   const d = new Date();
@@ -46,7 +47,10 @@ const outputBroken = async({broken, succeeds, browser, fd, permittedUrls, goodLi
 
   try {
     const base = `${browser}.${getTime()}.json`;
-    const file = path.join(process.cwd(), 'broken', base);
+    const dir = path.join(process.cwd(), 'broken');
+    const file = path.join(dir, base);
+
+    await mkdir(dir, {recursive: true});
 
     if (goodLinks) {
       console.log(`Omitted up to ${chalk.cyan(goodLinks)} links already found to be good`);
@@ -58,9 +62,10 @@ const outputBroken = async({broken, succeeds, browser, fd, permittedUrls, goodLi
     console.log(chalk.red(`Found ${broken.length} broken links`));
     console.log('\nWriting broken links to file...', file);
 
-    await fse.outputJson(file, broken);
+    await writeFile(file, JSON.stringify(broken, null, 2));
   } catch (err) {
     console.log(chalk.red('Failed to write file'));
+    console.log(err);
   }
 };
 
@@ -76,7 +81,13 @@ const handleSignal = (settings) => {
 const axios = ax.create({
   timeout: 6000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.110 Safari/537.36 Edg/96.0.1054.57',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.6845.92 Safari/537.36',
+    Connection: 'keep-alive',
+    Accept: 'text/html,application/xhtml+xml',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    DNT: '1',
+    'Upgrade-Insecure-Requests': '1',
   },
 });
 
@@ -92,7 +103,7 @@ const isUrlPermittedWithStatus = (allPermitted = [], url, status) => {
   return allPermitted.some((permitted) => url.includes(permitted.url) && (!permitted.status || permitted.status === status));
 };
 
-module.exports = {
+export {
   closeFd,
   handleSignal,
   outputBroken,

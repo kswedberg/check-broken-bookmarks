@@ -1,19 +1,18 @@
-/* eslint-disable no-await-in-loop */
-const fs = require('fs');
-const chalk = require('chalk');
-const {promisify} = require('util');
-const {PromisePool} = require('@supercharge/promise-pool');
-
-const open = promisify(fs.open);
-const appendFile = promisify(fs.appendFile);
-const {filePaths, getConfig} = require('./config/config.js');
-const {
+import {readFile, appendFile} from 'node:fs/promises';
+import fs from 'node:fs';
+import {promisify} from 'node:util';
+import chalk from 'chalk';
+import {PromisePool} from '@supercharge/promise-pool';
+import {filePaths, getConfig} from './config/config.js';
+import {
   isUrlPermittedWithStatus,
   isUrlPermitted,
   outputBroken,
   handleSignal,
   axios,
-} = require('./utils.js');
+} from './utils.js';
+
+const open = promisify(fs.open);
 
 const findBroken = async() => {
   const settings = await getConfig();
@@ -21,8 +20,17 @@ const findBroken = async() => {
   let fails = 0;
   let succeeds = 0;
   const broken = [];
+  let src = [];
 
-  const src = require(config.src);
+  try {
+    const srcFile = await readFile(config.src, 'utf8');
+
+    src = JSON.parse(srcFile);
+  } catch (err) {
+    console.log('Error importing source file', config.src);
+    throw err;
+  }
+
   const bookmarks = src
   .filter(({url}) => {
     return url && url.startsWith('http');
@@ -37,7 +45,8 @@ const findBroken = async() => {
   process.on('SIGINT', handleSignal({broken, succeeds, fd, browser}));
   process.on('SIGTERM', handleSignal({broken, succeeds, fd, browser}));
 
-  await PromisePool.for(bookmarks)
+  await PromisePool
+  .for(bookmarks)
   .process(async(item, index, pool) => {
     const {url, title} = item;
     const current = index + 1;
@@ -61,7 +70,7 @@ const findBroken = async() => {
       const {status, statusText} = response;
       const brokenItem = Object.assign({status, statusText}, item);
 
-      if (isUrlPermittedWithStatus(config.permittedUrls, url, status)) {
+      if (config.permittedStatuses.includes(status) || isUrlPermittedWithStatus(config.permittedUrls, url, status)) {
         return;
       }
       fails++;
